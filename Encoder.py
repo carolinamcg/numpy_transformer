@@ -26,6 +26,7 @@ class Encoder(NNModule):
         return enc_layer
         
     def forward(self, X):
+        # X.shape = (bs, seq_length, input features)
         X, _, _ = self.embedding.forward(X) # Transform to (batch_size, input_seq_length, d_model)
 
         for i in range(self.num_layers):

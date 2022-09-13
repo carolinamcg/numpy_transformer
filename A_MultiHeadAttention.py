@@ -1,6 +1,6 @@
 import numpy as np
 import math
-from numpy_attention import softmax
+#from numpy_attention import softmax
 from NNModule import NNModule
 
 class MultiHeadAttention(NNModule):
@@ -18,7 +18,12 @@ class MultiHeadAttention(NNModule):
         # Outputs of all sub-layers need to be of dimension self.d_model
         self.W_h, self.bias_h = self.get_parameters((self.num_heads * self.d, self.d_model), layer_name=layer_name +"_H")
         #converts each final value vector computed for each input token/query into 1 single vector w/ dimension=d_model=d_model --> weighted sum over all the heads per query/token
-    
+
+    def softmax(self, X):
+        """Compute softmax values for each sets of scores in x."""
+        e_x = np.exp(X - np.max(X))
+        return e_x / e_x.sum()
+
     def split_heads(self, X):
         """
         Split the last dimension into (num_heads, hidden size): X -> (num_heads, bs, seq_length, self.d)
@@ -35,7 +40,7 @@ class MultiHeadAttention(NNModule):
             Q, K.transpose(0, 1, 3, 2)
         )  #(batch size, num_heads, seq_length, seq_length)
         att_scores = att_scores / math.sqrt(self.d)
-        att_weights = np.apply_along_axis(softmax, -1, att_scores)
+        att_weights = np.apply_along_axis(self.softmax, -1, att_scores)
         return att_weights
 
     def get_values_attention(self, Q, K, V):
@@ -72,7 +77,7 @@ class MultiHeadAttention(NNModule):
         :param X: output embeddings of the decoder's self attention + ADD,NORM module
         :param Henc: output embeddings from the encoder's final layer
         '''
-        seq_length, _ = X.shape # (number of tokens, emdedding_dimensions)
+        bs, seq_length, _ = X.shape # (number of tokens, emdedding_dimensions)
 
         #Compute 1 q, k and v for each word in X (seq_length) and for each head
         Q = np.matmul(X, self.W_q) #(num_heads, seq_length, self.d)
