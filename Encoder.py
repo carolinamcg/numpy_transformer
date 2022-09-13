@@ -39,8 +39,8 @@ class Encoder(NNModule):
 
 if __name__ == '__main__':
     vocab_size = 20
-    X = np.array([[0, 5, 3, 2, 1, 4, 3, 2, 9, 8]]) #word indexes
-    X = np.squeeze(np.eye(vocab_size)[X.reshape(-1)]) #convert words to one-hot
+    X = np.array([0, 5, 3, 2, 1, 4, 3, 2, 9, 8]) #word indexes
+    #X = np.squeeze(np.eye(vocab_size)[X.reshape(-1)]) #convert words to one-hot
     X = np.array([X, X])
     t_enc = Encoder(num_layers=2, ff_hidden_dim=3, num_heads=2, d_model=4, conv_hidden_dim=8, 
             input_vocab_size=vocab_size, maximum_position_encoding=10, p=0)

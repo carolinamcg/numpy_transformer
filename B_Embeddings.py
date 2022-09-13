@@ -50,6 +50,7 @@ class LayerNormalization(NNModule):
 class Embeddings(NNModule):
     def __init__(self, d_model, vocab_size, max_position_embeddings, p, layer_name="Emb"):
         super().__init__()
+        self.vocab_size = vocab_size
         self.word_embeddings = self.Embedding(vocab_size, d_model, padding_idx=1, layer_name="W_"+layer_name)
         #self.position_embeddings = self.Embedding(max_position_embeddings, d_model)
         self.position_embeddings = self.create_sinusoidal_embeddings(
@@ -91,12 +92,13 @@ class Embeddings(NNModule):
 
         return E
 
-    def forward(self, one_hot_inputs):
+    def forward(self, indexed_tokens):
         '''
         :param one_hot_inputs: (seq_length, vocab_size) array. eaxh row corresponds 
         to a token/word and the column idx=1 identifies which word from the total vocabulary/dictionary is
         '''
-        seq_length = one_hot_inputs.shape[-2]
+        bs, seq_length = indexed_tokens.shape #one_hot_inputs.shape[-2]
+        one_hot_inputs = np.array([self.one_hot(self.vocab_size, ids) for ids in indexed_tokens])
         position_ids = self.one_hot(seq_length, np.arange(seq_length)) # (max_seq_length, max_seq_length)
                 # marks positions inside each sequence
 
@@ -117,8 +119,8 @@ class Embeddings(NNModule):
 
 if __name__ == '__main__':
     vocab_size = 20
-    X = np.array([[0, 5, 3, 2, 1, 4, 3, 2, 9, 8]]) #word indexes
-    X = np.squeeze(np.eye(vocab_size)[X.reshape(-1)]) #convert words to one-hot
+    X = np.array([0, 5, 3, 2, 1, 4, 3, 2, 9, 8]) #word indexes
+    #X = np.squeeze(np.eye(vocab_size)[X.reshape(-1)]) #convert words to one-hot
     X = np.array([X, X])
     bs = 2
     emb = Embeddings(d_model=64, vocab_size=20, max_position_embeddings=10, p=0)
