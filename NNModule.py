@@ -1,11 +1,10 @@
 import numpy as np
 
 class NNModule():
-    def __init__(self, epoch=0, batch_size=2):
+    def __init__(self, epoch=0):
         self.weigthts = {}
         self.biases =  {}
         self.epoch = epoch
-        self.batch_size = batch_size
         self.attention = {}
 
     def output_parameters(self):

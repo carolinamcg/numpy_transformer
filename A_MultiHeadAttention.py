@@ -4,8 +4,8 @@ from numpy_attention import softmax
 from NNModule import NNModule
 
 class MultiHeadAttention(NNModule):
-    def __init__(self, hidden_size, num_heads, d_model, p, layer_name="EncL", epoch=0, batch_size=2):
-        super().__init__(epoch, batch_size)
+    def __init__(self, hidden_size, num_heads, d_model, p, layer_name="EncL"):
+        super().__init__()
         self.num_heads = num_heads #number of q, k, v per token x
         self.d = hidden_size #dimension of each query, value and key
         self.d_model = d_model #dimension of the input/output embeddings
