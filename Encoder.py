@@ -21,6 +21,7 @@ class Encoder(NNModule):
         #self.enc_layer= EncoderLayer(ff_hidden_dim, num_heads, d_model, conv_hidden_dim, p, eps)
     
     def __createEncLayer(self, i):
+        #parameters are not shared across layers nor heads, only across timesteps/input positions
         enc_layer = EncoderLayer(self.ff_hidden_dim, self.num_heads, self.d_model, 
             self.conv_hidden_dim, self.p, self.eps, layer_name="EncL%i"%i)
         return enc_layer
