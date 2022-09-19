@@ -92,6 +92,11 @@ class Embeddings(NNModule):
 
         return E
 
+    def softmax(self, X):
+        """Compute softmax values for each sets of scores in x."""
+        e_x = np.exp(X - np.max(X))
+        return e_x / e_x.sum()
+
     def forward(self, indexed_tokens):
         '''
         :param one_hot_inputs: (seq_length, vocab_size) array. eaxh row corresponds 
@@ -116,6 +121,12 @@ class Embeddings(NNModule):
         
         return embeddings, word_embeddings, position_embeddings
 
+    def de_embedd(self, X):
+        ''' Final linear layer + softmax to convert the embedded vectors to vocabulary words'''
+        words_probabilities = np.matmul(X, self.word_embeddings.transpose(1,0))
+        one_hot_words = np.apply_along_axis(self.softmax, -1, words_probabilities) 
+
+        return one_hot_words
 
 if __name__ == '__main__':
     vocab_size = 20

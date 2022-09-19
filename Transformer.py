@@ -7,7 +7,7 @@ from NNModule import NNModule
 
 class Transformer(NNModule):
     def __init__(self, num_layers, ff_hidden_dim, num_heads, d_model, conv_hidden_dim, input_vocab_size,
-               maximum_position_encoding, p=0.1, eps=1e-6):
+               maximum_position_encoding, p=0.1, eps=1e-6, mask_decoder=True, de_embedd=False):
         super().__init__()
         self.d_model = d_model
         self.num_layers = num_layers
@@ -16,6 +16,9 @@ class Transformer(NNModule):
         self.conv_hidden_dim = conv_hidden_dim
         self.p = p
         self.eps = eps
+
+        self.mask_decoder = mask_decoder
+        self.de_embedd = de_embedd #convert final output embedded vectors into the actual one-hot encoded tokens
 
         # Full encoder first
         #self.encoder = Encoder(num_layers, ff_hidden_dim, num_heads, d_model, conv_hidden_dim, input_vocab_size,
@@ -30,6 +33,10 @@ class Transformer(NNModule):
         enc_layer = DecoderLayer(self.ff_hidden_dim, self.num_heads, self.d_model, 
             self.conv_hidden_dim, self.p, self.eps, layer_name="DecL%i"%i)
         return enc_layer
+    
+    def create_subsequent_maks(self, seq_length):
+        mask = np.tril(np.ones((seq_length,seq_length))) 
+        return mask
     
     def __createEncLayer(self, i):
         enc_layer = EncoderLayer(self.ff_hidden_dim, self.num_heads, self.d_model, 
@@ -46,10 +53,16 @@ class Transformer(NNModule):
 
         Y, _, _ = self.embedding.forward(Y) #same embedding weights used for the encoder's input
 
+        if self.mask_decoder:
+            mask = self.create_subsequent_maks(Y.shape[1])
+
         for i in range(self.num_layers):
-            Y, A = self.__createDecLayer(i).forward(Henc, Y)
+            Y, A = self.__createDecLayer(i).forward(Henc, Y, mask)
             self.store_attention_weights(A, layername="ATT%i"%i)
             #X = self.enc_layer.forward(X)
+
+        if self.de_embedd:
+            X = self.embedding.de_embedd(X)
 
         return Y # (batch_size, input_seq_len, d_model)
 

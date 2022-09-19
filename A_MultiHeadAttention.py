@@ -12,6 +12,7 @@ class MultiHeadAttention(NNModule):
         self.layer_name = layer_name
 
         # Weight matrices to compute Q, K, V from input embeddings (emb dim, hidden dim for each head)
+        # each attention head has its own Wv, Wq, and Wk transforms.
         self.W_q, _ = self.get_parameters((d_model, self.d * num_heads), layer_name=layer_name +"_Q", bias=False)
         self.W_k, _ = self.get_parameters((d_model, self.d * num_heads), layer_name=layer_name +"_K", bias=False)
         self.W_v, _ = self.get_parameters((d_model, self.d * num_heads), layer_name=layer_name +"_V", bias=False)
@@ -34,7 +35,7 @@ class MultiHeadAttention(NNModule):
         """
         return np.array(np.split(X, self.num_heads, axis=-1)).transpose(1, 0, 2, 3)
     
-    def get_attention_weights(self, Q, K, cross=False):
+    def get_attention_weights(self, Q, K, mask=None):
         """Computes the normalized attentions weights between each q and k,
         as a scaled dot product"""
         att_scores = np.matmul(
@@ -42,21 +43,21 @@ class MultiHeadAttention(NNModule):
         )  #(batch size, num_heads, seq_length, seq_length)
         att_scores = att_scores / math.sqrt(self.d)
 
-        if ("Dec" in self.layer_name) and not cross: #for training decoder (not autorregresive)
+        if mask is not None: #for training decoder (not autorregresive)
             #bu only for self attention, not cross
-            mask = np.tril(np.ones(att_scores.shape[2:])) 
+            #mask = np.tril(np.ones(att_scores.shape[2:])) 
             att_scores[:,:, mask==0] = -math.inf #elements above the k-th diagonal = -inf
         
         att_weights = np.apply_along_axis(self.softmax, -1, att_scores) #-inf values -> 0
         return att_weights
 
-    def get_values_attention(self, Q, K, V, cross=False):
+    def get_values_attention(self, Q, K, V, mask=None):
         '''Get the linear combination of values for each query'''
-        A = self.get_attention_weights(Q, K, cross=cross)
+        A = self.get_attention_weights(Q, K, mask=mask)
         H = np.matmul(A, V) #(bs, num_heads, seq_length, self.d)
         return H, A
     
-    def forward(self, X):
+    def forward(self, X, mask=None):
         bs, seq_length, _ = X.shape # (bs, number of tokens, emdedding_dimensions=d_model)
 
         #Compute all q, k and v for each word in X (seq_length)
@@ -69,7 +70,7 @@ class MultiHeadAttention(NNModule):
         V = self.split_heads(V)
 
         # Calculate the attention weights for each of the heads
-        H_cat, A = self.get_values_attention(Q, K, V) #H_cat = (bs, num_heads, seq_length, self.d)
+        H_cat, A = self.get_values_attention(Q, K, V, mask=mask) #H_cat = (bs, num_heads, seq_length, self.d)
 
         # Merge heads outputs into the last array's dimension
         H_cat = H_cat.transpose(0,2,1,3).reshape(bs, seq_length, -1) #(bs, seq_length, self.d * number_heads)
@@ -96,7 +97,7 @@ class MultiHeadAttention(NNModule):
         V = self.split_heads(V)
 
         # Calculate the attention weights for each of the heads
-        H_cat, A = self.get_values_attention(Q, K, V, cross=True) #H_cat = (num_heads, seq_length, self.d)
+        H_cat, A = self.get_values_attention(Q, K, V, mask=None) #H_cat = (num_heads, seq_length, self.d)
 
         # Merge heads outputs into the last array's dimension
         H_cat = H_cat.transpose(0,2,1,3).reshape(bs, seq_length, -1) #(bs, seq_length, self.d * number_heads)

@@ -6,15 +6,16 @@ from NNModule import NNModule
 
 class Encoder(NNModule):
     def __init__(self, num_layers, ff_hidden_dim, num_heads, d_model, conv_hidden_dim, input_vocab_size,
-               maximum_position_encoding, p=0.1, eps=1e-6):
+               maximum_position_encoding, p=0.1, eps=1e-6, de_embedd=False):
         super().__init__()
-        self.d_model = d_model
+        self.d_model = d_model #number of dimensions in the embedding space used throughout the model.
         self.num_layers = num_layers
         self.ff_hidden_dim = ff_hidden_dim
         self.num_heads = num_heads
         self.conv_hidden_dim = conv_hidden_dim
         self.p = p
         self.eps = eps
+        self.de_embedd = de_embedd #convert final output embedded vectors into the actual one-hot encoded tokens
 
         self.embedding = Embeddings(d_model, input_vocab_size, maximum_position_encoding, p)
 
@@ -34,6 +35,9 @@ class Encoder(NNModule):
             X, A = self.__createEncLayer(i).forward(X)
             self.store_attention_weights(A, layername="ATT%i"%i)
             #X = self.enc_layer.forward(X)
+
+        if self.de_embedd:
+            X = self.embedding.de_embedd(X)
 
         return X  # (batch_size, input_seq_len, d_model)
 
