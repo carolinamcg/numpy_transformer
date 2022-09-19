@@ -15,10 +15,10 @@ class DecoderLayer(NNModule):
         self.layernorm2 = LayerNormalization(normal_shape=d_model, epsilon=1e-6, layer_name=layer_name + "_LN2")
         self.layernorm3 = LayerNormalization(normal_shape=d_model, epsilon=1e-6, layer_name=layer_name + "_LN3")
 
-    def forward(self, Henc, Y):
+    def forward(self, Henc, Y, mask=None):
         
         # Multi-head attention 
-        attn_output, attn_weights = self.mha.forward(Y)  # (seq_length, self.d_model)
+        attn_output, attn_weights = self.mha.forward(Y, mask)  # (seq_length, self.d_model)
         # Layer norm after adding the residual connection 
         out1 = self.layernorm1.forward(Y + attn_output)  # (seq_length, self.d_model)
 
